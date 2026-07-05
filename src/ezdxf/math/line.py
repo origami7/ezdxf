@@ -151,11 +151,17 @@ class ConstructionRay:
             y = ray2._location.y
             x = ray1.xof(y)
         else:
-            # calc intersection with the 'straight-line-equation'
-            # based on y(x) = y0 + x*slope
-            # guards above guarantee that no slope is None
-            x = (ray1._yof0 - ray2._yof0) / (ray2._slope - ray1._slope)  # type: ignore
-            y = ray1.yof(x)
+            # Parametric intersection relative to ray1._location. Computing the
+            # hit point relative to a nearby location (instead of the slope /
+            # y-intercept form based on x=0) avoids catastrophic cancellation
+            # for near-axis-aligned rays with large coordinates.
+            # The is_parallel() guard above guarantees denom != 0 here.
+            o = ray2._location - ray1._location
+            d1 = ray1._direction
+            d2 = ray2._direction
+            denom = d1.x * d2.y - d1.y * d2.x
+            t = (o.x * d2.y - o.y * d2.x) / denom
+            x, y = ray1._location + d1 * t
         return Vec2((x, y))
 
     def orthogonal(self, location: UVec) -> ConstructionRay:
