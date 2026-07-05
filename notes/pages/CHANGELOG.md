@@ -1,6 +1,8 @@
 ## Version 1.4.5 - dev
 	- BUGFIX: fix pattern scaling at `HATCH` transformations
 		- {{issue 1391}}
+	- BUGFIX: fixed `numpy` v2.5 deprecation warning for using `ndarray.shape` property
+		- {{issue 1397}}
 - ## Version 1.4.4 - 2026-05-14
   id:: 6a01df82-ea1b-48c4-912f-6a80564d3288
 	- NEW: `ezdxf.entities.textstyle.get_textstyle()` function
