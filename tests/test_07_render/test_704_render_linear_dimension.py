@@ -111,6 +111,26 @@ def test_dimension_insert_attribute_translates_the_block_content():
         assert (vpoint.dxf.location - blk_point.dxf.location).isclose(INSERT)
 
 
+def test_aligned_dim_near_vertical_measurement():
+    # Regression test for issue #1300: an aligned dimension whose points are
+    # only slightly non-vertical (a tiny x-difference) rendered a wrong
+    # measurement (32 instead of 44) because ConstructionRay.intersect lost
+    # precision on the near-vertical dimension-line ray.
+    doc = ezdxf.new()
+    msp = doc.modelspace()
+    dim = msp.add_aligned_dim(
+        p1=(250235.3373553778, 99368),
+        p2=(250235.3373553779, 99412),
+        distance=20,
+    )
+    dim.render()
+    dimension = dim.dimension
+    blk = dimension.get_geometry_block()
+    mtext = [e for e in blk if e.dxftype() == "MTEXT"][0]
+    assert mtext.text == "44"
+    assert float(mtext.text) == dimension.get_measurement()
+
+
 @pytest.mark.parametrize("color", [1, 7])
 def test_override_all_colors(color):
     new_doc = ezdxf.new()

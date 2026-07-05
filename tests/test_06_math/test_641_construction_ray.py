@@ -121,6 +121,26 @@ class TestConstructionRay:
         with pytest.raises(ParallelRaysError):
             _ = ray1.bisectrix(ray3)
 
+    def test_near_vertical_ray_large_coordinates(self):
+        # Regression test for issue #1300: a near-vertical ray with large
+        # coordinates (as produced by aligned dimensions) must intersect its
+        # orthogonal rays accurately. The old slope / y-intercept formula in
+        # intersect() suffered catastrophic cancellation here and returned a
+        # wrong span (32 instead of 44).
+        p0 = (250235.337, 99368)
+        p1 = (250235.337, 99412)
+        # angle of (p1 - p0) is 89.99999999984841 deg -> near vertical but the
+        # tiny direction.x keeps the ray on the general (slope-based) path.
+        ray = ConstructionRay(p0, angle=89.99999999984841 / 180.0 * math.pi)
+        assert ray._is_vertical is False
+        assert ray._is_horizontal is False
+
+        hit0 = ray.intersect(ray.orthogonal(p0))
+        hit1 = ray.intersect(ray.orthogonal(p1))
+        assert math.isclose(hit0.y, 99368, abs_tol=1e-6)
+        assert math.isclose(hit1.y, 99412, abs_tol=1e-6)
+        assert math.isclose(hit1.y - hit0.y, 44, abs_tol=1e-6)
+
     def test_two_close_horizontal_rays(self):
         p1 = (39340.75302672016, 32489.73349764998)
         p2 = (39037.75302672119, 32489.73349764978)
