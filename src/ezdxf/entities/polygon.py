@@ -401,18 +401,21 @@ class DXFPolygon(DXFGraphic):
         dxf.extrusion = ocs.new_extrusion
         if self.pattern:
             # todo: non-uniform pattern scaling is not supported
-            angle = ocs.transform_deg_angle(self.dxf.pattern_angle)           
-
+            
             # scale pattern relative to current state:
             # self.dxf.pattern_scale is already applied to the pattern!
             relative_factor = ocs.transform_length((1, 0, 0))
-            self.pattern.scale(relative_factor, angle)
+
+            # rotation relative to current state:
+            rotation_angle = ocs.transform_deg_angle(0)
+            self.pattern.scale(relative_factor, rotation_angle)
 
             # The pattern_scale factor has to be applied to the base pattern to get the
             # final scaling. This is important for CAD applications, not for the rendering
             # of the pattern itself.
-            self.dxf.pattern_scale = self.dxf.pattern_scale * relative_factor
-            self.dxf.pattern_angle = angle
+            self.dxf.pattern_scale *= relative_factor
+            # update absolute pattern rotation angle
+            self.dxf.pattern_angle += rotation_angle
         self.post_transform(m)
         return self
 
@@ -453,9 +456,10 @@ class DXFPolygon(DXFGraphic):
                 return
 
     @abc.abstractmethod
-    def set_solid_fill(self, color: int = 7, style: int = 1, rgb: Optional[RGB] = None):
-        ...
-    
+    def set_solid_fill(
+        self, color: int = 7, style: int = 1, rgb: Optional[RGB] = None
+    ): ...
+
     def audit(self, auditor: Auditor) -> None:
         super().audit(auditor)
         if not self.is_alive:
@@ -463,6 +467,6 @@ class DXFPolygon(DXFGraphic):
         if not self.paths.is_valid():
             auditor.fixed_error(
                 code=AuditError.INVALID_HATCH_BOUNDARY_PATH,
-                message=f"Deleted entity {str(self)} containing invalid boundary paths."
+                message=f"Deleted entity {str(self)} containing invalid boundary paths.",
             )
             auditor.trash(self)

@@ -36,9 +36,7 @@ def test_edge_path_transform_interface(m44):
     path.add_ellipse(
         (5, 10), major_axis=(5, 0), ratio=0.2, start_angle=0, end_angle=180
     )
-    spline = path.add_spline(
-        [(1, 1), (2, 2), (3, 3), (4, 4)], degree=3, periodic=1
-    )
+    spline = path.add_spline([(1, 1), (2, 2), (3, 3), (4, 4)], degree=3, periodic=1)
     # the following values do not represent a mathematically valid spline
     spline.control_points = [(1, 1), (2, 2), (3, 3), (4, 4)]
     spline.knot_values = [1, 2, 3, 4, 5, 6]
@@ -93,15 +91,11 @@ def closed_edge_hatch(request):
 
 def test_full_circle_ellipse_edge_rotation(closed_edge_hatch):
     edge = closed_edge_hatch.paths[0].edges[0]
-    assert arc_angle_span_deg(
-        edge.start_angle, edge.end_angle
-    ) == pytest.approx(360)
+    assert arc_angle_span_deg(edge.start_angle, edge.end_angle) == pytest.approx(360)
 
     closed_edge_hatch.transform(Matrix44.z_rotate(math.radians(30)))
     edge2 = closed_edge_hatch.paths[0].edges[0]
-    assert arc_angle_span_deg(
-        edge2.start_angle, edge2.end_angle
-    ) == pytest.approx(360)
+    assert arc_angle_span_deg(edge2.start_angle, edge2.end_angle) == pytest.approx(360)
 
 
 def test_full_circle_edge_scaling():
@@ -181,10 +175,7 @@ def test_wcs_mirror_transformations_of_clockwise_oriented_curves(sx, sy, kind):
 
     expected_path = src_path.transform(m)
     path_of_transformed_hatch = make_path(transformed_hatch)
-    assert (
-        have_close_control_vertices(path_of_transformed_hatch, expected_path)
-        is True
-    )
+    assert have_close_control_vertices(path_of_transformed_hatch, expected_path) is True
 
 
 @pytest.mark.parametrize(
@@ -192,9 +183,7 @@ def test_wcs_mirror_transformations_of_clockwise_oriented_curves(sx, sy, kind):
     [(-1, 1), (1, -1), (-1, -1)],
     ids=["mirror-x", "mirror-y", "mirror-xy"],
 )
-def test_wcs_mirror_transformations_for_all_edge_types(
-    sx, sy, all_edge_types_hatch
-):
+def test_wcs_mirror_transformations_for_all_edge_types(sx, sy, all_edge_types_hatch):
     hatch = all_edge_types_hatch
     src_path = make_path(hatch)
     assert len(src_path) > 1, "expected non empty path"
@@ -204,7 +193,49 @@ def test_wcs_mirror_transformations_for_all_edge_types(
 
     expected_path = src_path.transform(m)
     path_of_transformed_hatch = make_path(transformed_hatch)
-    assert (
-        have_close_control_vertices(path_of_transformed_hatch, expected_path)
-        is True
-    )
+    assert have_close_control_vertices(path_of_transformed_hatch, expected_path) is True
+
+
+def test_hatch_pattern_angle_after_hatch_rotation_has_new_absolute_angle():
+    hatch = Hatch()
+    hatch.paths.add_polyline_path([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hatch.set_pattern_fill("ANSI31", scale=1.0, angle=30.0)
+
+    assert hatch.dxf.pattern_angle == 30
+    hatch.transform(Matrix44.z_rotate(math.radians(15)))
+    assert hatch.dxf.pattern_angle == pytest.approx(45)
+
+
+def test_translation_does_not_change_hatch_pattern_angle():
+    hatch = Hatch()
+    hatch.paths.add_polyline_path([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hatch.set_pattern_fill("ANSI31", scale=1.0, angle=30.0)
+
+    assert hatch.dxf.pattern_angle == 30
+    hatch.transform(Matrix44.translate(100, 0, 0))
+    assert hatch.dxf.pattern_angle == pytest.approx(30)
+
+
+def test_pattern_line_angle_after_rotation_has_new_absolute_angle():
+    hatch = Hatch()
+    hatch.paths.add_polyline_path([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hatch.set_pattern_fill("ANSI31", scale=1.0, angle=30.0)
+    pattern_line_angle = hatch.pattern.lines[0].angle
+    # ANSI31 has 45° pattern lines in base configuration at 0° rotation
+    assert pattern_line_angle == 30 + 45
+
+    # rotation 15 degree counter-clockwise
+    hatch.transform(Matrix44.z_rotate(math.radians(15)))
+    assert hatch.pattern.lines[0].angle == pytest.approx(30 + 45 + 15)
+
+
+def test_translation_does_not_change_pattern_line_angle():
+    hatch = Hatch()
+    hatch.paths.add_polyline_path([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hatch.set_pattern_fill("ANSI31", scale=1.0, angle=30.0)
+    pattern_line_angle = hatch.pattern.lines[0].angle
+    # ANSI31 has 45° pattern lines in base configuration at 0° rotation
+    assert pattern_line_angle == 30 + 45
+
+    hatch.transform(Matrix44.translate(100, 0, 0))
+    assert hatch.pattern.lines[0].angle == pytest.approx(pattern_line_angle)
