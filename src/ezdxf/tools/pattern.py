@@ -53,7 +53,7 @@ def scale_pattern(
     pattern: HatchPatternType, factor: float = 1, angle: float = 0
 ) -> HatchPatternType:
     ndigits = 10
-
+    # angle is the additional rotation to the current rotation angle0
     def _scale(iterable) -> Sequence[float]:
         return [round(i * factor, ndigits) for i in iterable]
 
