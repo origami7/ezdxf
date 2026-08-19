@@ -239,3 +239,62 @@ def test_translation_does_not_change_pattern_line_angle():
 
     hatch.transform(Matrix44.translate(100, 0, 0))
     assert hatch.pattern.lines[0].angle == pytest.approx(pattern_line_angle)
+
+
+def test_translation_moves_pattern_base_point_like_a_boundary_vertex():
+    # Regression test for issue #1402: DXFPolygon.transform() translated the
+    # boundary paths but left the hatch pattern line base points untouched, so
+    # the pattern phase drifted relative to the boundary under any translation.
+    hatch = Hatch()
+    path = hatch.paths.add_polyline_path([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hatch.set_pattern_fill("ANSI31", scale=1.0)
+    # anchor the first pattern line base point at the boundary origin (0, 0)
+    hatch.pattern.lines[0].base_point = Vec2(0, 0)
+
+    offset = Vec2(37.5, 11.0)
+    hatch.transform(Matrix44.translate(offset.x, offset.y, 0))
+
+    # the boundary vertex (0, 0) maps to the translation offset ...
+    vx, vy, _ = path.vertices[0]
+    assert Vec2(vx, vy).isclose(offset)
+    # ... and the pattern base point must move by the same translation
+    assert hatch.pattern.lines[0].base_point.isclose(offset)
+
+
+def test_translation_moves_every_pattern_base_point_by_the_same_offset():
+    # Regression test for issue #1402: every non-zero base point must move by
+    # the same translation as the boundary, keeping the pattern phase locked.
+    hatch = Hatch()
+    hatch.paths.add_polyline_path([(0, 0), (10, 0), (10, 10), (0, 10)])
+    hatch.set_pattern_fill("ANSI31", scale=1.0)
+    # give each pattern line a distinct non-zero base point
+    for index, line in enumerate(hatch.pattern.lines):
+        line.base_point = Vec2(index + 1, 2 * (index + 1))
+    original_base_points = [line.base_point for line in hatch.pattern.lines]
+
+    offset = Vec2(100, 25)
+    hatch.transform(Matrix44.translate(offset.x, offset.y, 0))
+
+    for line, base_point in zip(hatch.pattern.lines, original_base_points):
+        assert line.base_point.isclose(base_point + offset)
+
+
+def test_pattern_base_point_maps_like_boundary_vertex_under_full_transform():
+    # Regression test for issue #1402: a base point coincident with a boundary
+    # vertex must land on the exact same transformed point under a combined
+    # rotation + translation. This guards against double-applying the linear
+    # part that Pattern.scale() already handles.
+    vertices = [(2, 3), (10, 0), (10, 10), (0, 10)]
+    hatch = Hatch()
+    path = hatch.paths.add_polyline_path(vertices)
+    hatch.set_pattern_fill("ANSI31", scale=1.0)
+    hatch.pattern.lines[0].base_point = Vec2(2, 3)  # coincident with vertices[0]
+
+    m = Matrix44.chain(
+        Matrix44.z_rotate(math.radians(37)),
+        Matrix44.translate(37.5, 11.0, 0),
+    )
+    hatch.transform(m)
+
+    vx, vy, _ = path.vertices[0]
+    assert hatch.pattern.lines[0].base_point.isclose(Vec2(vx, vy))
