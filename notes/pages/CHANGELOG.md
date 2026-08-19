@@ -12,6 +12,9 @@
 		- contributed by #gaoflow
 	- BUGFIX: apply `HATCH` pattern rotation relative to existing rotation
 		- {{issue 1399}}
+	- BUGFIX: translate hatch pattern base points
+		- {{pr 1402}}
+		- contributed by #youdie006
 - ## Version 1.4.4 - 2026-05-14
   id:: 6a01df82-ea1b-48c4-912f-6a80564d3288
 	- NEW: `ezdxf.entities.textstyle.get_textstyle()` function
