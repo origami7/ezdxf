@@ -408,7 +408,24 @@ class DXFPolygon(DXFGraphic):
 
             # rotation relative to current state:
             rotation_angle = ocs.transform_deg_angle(0)
+
+            # Capture the original base points before scaling/rotating the
+            # pattern. Pattern.scale() applies only the linear part (scale and
+            # rotation) of the transformation to the base points, it never
+            # translates them, so the pattern phase drifts relative to the
+            # boundary under any translation (issue #1402).
+            original_base_points = [line.base_point for line in self.pattern.lines]
             self.pattern.scale(relative_factor, rotation_angle)
+
+            # Translate the base points by mapping each original base point once
+            # with the full transformation, exactly like a boundary path vertex
+            # (see PolylinePath.transform). Mapping the original point with the
+            # full affine transform avoids double-applying the linear part that
+            # Pattern.scale() already handled.
+            for line, base_point in zip(self.pattern.lines, original_base_points):
+                line.base_point = ocs.transform_vertex(
+                    Vec3(base_point.x, base_point.y, elevation)
+                ).vec2
 
             # The pattern_scale factor has to be applied to the base pattern to get the
             # final scaling. This is important for CAD applications, not for the rendering
