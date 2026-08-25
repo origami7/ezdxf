@@ -369,6 +369,7 @@ SPECIAL_CHAR_ENCODING = {
     "c": "Ø",  # alt-0216
     "d": "°",  # alt-0176
     "p": "±",  # alt-0177
+    "%": "%",  # literal percent sign (%%%)
 }
 # Inline codes for strokes in TEXT, ATTRIB and ATTDEF
 # %%u underline
