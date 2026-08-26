@@ -151,7 +151,8 @@ class TestMTextContentParsing:
 
     def test_percent_sign_usage(self):
         token = list(MTextParser("%_%%_%%%_%%%%"))[0]
-        assert token.data == "%_%%_%%%_%%%%"
+        # changed by #1408 - added %%% as control code for %
+        assert token.data == "%_%%_%_%%"
 
 
 class TestParsingFractions:
