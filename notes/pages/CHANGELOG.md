@@ -1,4 +1,6 @@
 ## Version 1.4.5 - dev
+	- Added support for control code `%%%` for `%` as documented by [Autodesk](https://help.autodesk.com/cloudhelp/2024/ENU/AutoCAD-Core/files/GUID-968CBC1D-BA99-4519-ABDD-88419EB2BF92.htm)
+		- contributed by #CRQuadro
 	- BUGFIX: fix pattern scaling at `HATCH` transformations
 		- {{issue 1391}}
 	- BUGFIX: fixed `numpy` v2.5 deprecation warning for using `ndarray.shape` property
