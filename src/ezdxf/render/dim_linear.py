@@ -45,7 +45,7 @@ class LinearDimension(BaseDimensionRenderer):
             measurement.text_movement_rule = 2
 
         self.oblique_angle: float = self.dimension.get_dxf_attrib(
-            "oblique_angle", 90
+            "oblique_angle", 0
         )
         self.dim_line_angle: float = self.dimension.get_dxf_attrib("angle", 0)
         self.dim_line_angle_rad: float = math.radians(self.dim_line_angle)
@@ -71,8 +71,18 @@ class LinearDimension(BaseDimensionRenderer):
             self.dimension.dxf.defpoint, angle=self.dim_line_angle_rad
         )
 
-        self.dim_line_start: Vec2 = dim_line_ray.intersect(ext1_ray)
-        self.dim_line_end: Vec2 = dim_line_ray.intersect(ext2_ray)
+        # When the extension line direction equals the dimension line
+        # direction the two rays are parallel and the intersection is
+        # undefined; fall back to the measurement points themselves, which
+        # matches the behavior of AutoCAD/BricsCAD in this degenerate case.
+        if dim_line_ray.is_parallel(ext1_ray):
+            self.dim_line_start: Vec2 = self.ext1_line_start
+        else:
+            self.dim_line_start = dim_line_ray.intersect(ext1_ray)
+        if dim_line_ray.is_parallel(ext2_ray):
+            self.dim_line_end: Vec2 = self.ext2_line_start
+        else:
+            self.dim_line_end = dim_line_ray.intersect(ext2_ray)
         self.dim_line_center: Vec2 = self.dim_line_start.lerp(self.dim_line_end)
 
         if self.dim_line_start == self.dim_line_end:
@@ -506,7 +516,12 @@ class LinearDimension(BaseDimensionRenderer):
 
         """
         if start == end:
-            direction = Vec2.from_deg_angle(self.ext_line_angle)
+            # Degenerate case: extension line coincides with the dimension line
+            # (oblique_angle == 0). The extension line is drawn from the
+            # measurement point inward without any further extension in the
+            # opposite direction (length_below) to avoid creating a huge line
+            # that coincides with the dimension line itself.
+            return start, end
         else:
             direction = (end - start).normalize()
         if self.extension_lines.has_fixed_length:

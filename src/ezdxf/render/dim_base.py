@@ -449,7 +449,7 @@ class Measurement:
             style_name = "Standard"
         self.text_style_name: str = style_name
         text_style = get_text_style(doc, style_name)
-        self.text_height: float = get_char_height(dim_style, text_style) * scale
+        self.text_height: float = get_char_height(dim_style, text_style)
         self.text_width_factor: float = text_style.get_dxf_attrib("width", 1.0)
         self.stored_dim_text: str = dimension.dxf.text
 
